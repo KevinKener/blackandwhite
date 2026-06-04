@@ -1,4 +1,8 @@
 
+## Session startup
+
+At the start of every session in this project, invoke the `gstack` skill automatically to initialize the headless browser environment.
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
