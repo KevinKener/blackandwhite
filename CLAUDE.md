@@ -3,6 +3,14 @@
 
 At the start of every session in this project, invoke the `gstack` skill automatically to initialize the headless browser environment.
 
+## Project context
+
+- **Stack:** React + Vite, Node.js + Express + TypeScript, PostgreSQL + Supabase, Vercel.
+- **Developer:** primer proyecto profesional — explicar brevemente el porqué de cada decisión técnica importante. No asumir conocimiento de conceptos avanzados sin explicarlos.
+- **Plan de implementación:** las tareas siguen el orden T1→T2→…→T14 definido en `~/.gstack/projects/blackandwhite/`. Antes de arrancar cualquier tarea nueva, leer ese plan para entender el contexto.
+- **Feature branches:** crear una branch por tarea (`feat/t2-rls-policies`, `feat/t3-auth-hook`, etc.).
+- **Commits:** al terminar cada tarea hacer commit directo en la feature branch sin `/ship`, salvo que sea código TypeScript o React (ver Efficiency rules).
+
 ## Efficiency rules
 
 - **Effort por defecto: medium.** Usar high solo si el usuario lo pide explícitamente.
