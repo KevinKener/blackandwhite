@@ -10,7 +10,12 @@ resumen-sesion-*.html
 
 # Build output
 server/dist/
+client/admin/dist/
+client/customer/dist/
 node_modules/
 server/node_modules/
 client/admin/node_modules/
 client/customer/node_modules/
+
+# Lockfiles (project uses bun)
+package-lock.json
