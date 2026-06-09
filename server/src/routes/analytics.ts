@@ -12,19 +12,11 @@ const router = Router()
 router.get('/summary', requireAdmin, async (req, res) => {
   const { supabase } = res.locals.admin
 
-  const [ordersResult, customersResult, pointsResult, activePointsResult] = await Promise.all([
-    supabase
-      .from('orders')
-      .select('status', { count: 'exact', head: false }),
-
-    supabase
-      .from('customers')
-      .select('id', { count: 'exact', head: true }),
-
-    supabase
-      .from('point_transactions')
-      .select('points_earned.sum()', { count: 'exact', head: false }),
-
+  const [pendingResult, completedResult, customersResult, pointsResult, activePointsResult] = await Promise.all([
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+    supabase.from('orders').select('*', { count: 'exact', head: true }).eq('status', 'completed'),
+    supabase.from('customers').select('*', { count: 'exact', head: true }),
+    supabase.from('point_transactions').select('points_earned.sum()'),
     supabase
       .from('point_transactions')
       .select('remaining_points.sum()')
@@ -32,22 +24,19 @@ router.get('/summary', requireAdmin, async (req, res) => {
       .gt('expires_at', new Date().toISOString()),
   ])
 
-  if (ordersResult.error || customersResult.error || pointsResult.error || activePointsResult.error) {
-    const err = ordersResult.error ?? customersResult.error ?? pointsResult.error ?? activePointsResult.error
+  if (pendingResult.error || completedResult.error || customersResult.error || pointsResult.error || activePointsResult.error) {
+    const err = pendingResult.error ?? completedResult.error ?? customersResult.error ?? pointsResult.error ?? activePointsResult.error
     res.status(500).json({ error: err?.message })
     return
   }
 
-  const orders = ordersResult.data ?? []
-  const totalOrders = orders.length
-  const completedOrders = orders.filter((o) => o.status === 'completed').length
-  const pendingOrders = totalOrders - completedOrders
+  const pendingOrders = pendingResult.count ?? 0
+  const completedOrders = completedResult.count ?? 0
+  const totalOrders = pendingOrders + completedOrders
 
-  const totalPointsIssued = (pointsResult.data as Array<{ points_earned: number }>)
-    .reduce((sum, row) => sum + (row.points_earned ?? 0), 0)
-
-  const activePoints = (activePointsResult.data as Array<{ remaining_points: number }>)
-    .reduce((sum, row) => sum + (row.remaining_points ?? 0), 0)
+  // PostgREST aggregate syntax returns { sum: value }, not { field_name: value }.
+  const totalPointsIssued = (pointsResult.data as Array<{ sum: number }>)[0]?.sum ?? 0
+  const activePoints = (activePointsResult.data as Array<{ sum: number }>)[0]?.sum ?? 0
 
   res.json({
     orders: {

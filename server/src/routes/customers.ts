@@ -19,7 +19,11 @@ router.get('/', requireAdmin, async (req, res) => {
     .range(offset, offset + limit - 1)
 
   if (search) {
-    query = query.or(`phone.ilike.%${search}%,name.ilike.%${search}%`)
+    // Escape characters that have structural meaning in PostgREST filter syntax
+    // (comma = condition separator, parens = grouping) and SQL ilike wildcards
+    // (% and _) so the search is treated as a literal substring match.
+    const safe = search.replace(/[%_,()]/g, '\\$&')
+    query = query.or(`phone.ilike.%${safe}%,name.ilike.%${safe}%`)
   }
 
   const { data, error, count } = await query

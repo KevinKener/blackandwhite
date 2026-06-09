@@ -88,6 +88,8 @@ router.post('/:id/complete', requireAdmin, async (req, res) => {
     if (code === 'P0002') { res.status(404).json({ error: 'order not found' }); return }
     if (code === 'P0003') { res.status(403).json({ error: 'access denied' }); return }
     if (code === 'P0004') { res.status(409).json({ error: 'order already completed' }); return }
+    // 55P03: FOR UPDATE NOWAIT lock contention — concurrent completion attempt.
+    if (code === '55P03') { res.status(409).json({ error: 'order is being processed, please retry' }); return }
     res.status(500).json({ error: error.message })
     return
   }
