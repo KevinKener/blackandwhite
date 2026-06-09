@@ -1,0 +1,5 @@
+# gstack artifacts
+.gstack/
+
+# Session summaries
+resumen-sesion-*.html
