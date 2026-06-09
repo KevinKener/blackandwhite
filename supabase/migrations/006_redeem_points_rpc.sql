@@ -75,20 +75,24 @@ begin
   end if;
 
   -- 4. Lock all active point_transactions for this customer (FIFO order) and
-  --    read their IDs, balances, and total in one atomic query.
-  --    FOR UPDATE NOWAIT: raises 55P03 immediately if another redemption is
-  --    already running for this customer instead of waiting to deadlock.
+  --    read their IDs, balances, and total.
+  --    FOR UPDATE NOWAIT must be in a subquery — PostgreSQL does not allow it
+  --    directly on queries with aggregate functions. The subquery locks the rows;
+  --    the outer SELECT aggregates the locked result set.
   select
     array_agg(id            order by expires_at asc),
     array_agg(remaining_points order by expires_at asc),
     coalesce(sum(remaining_points), 0)
   into _tx_ids, _tx_amounts, _balance
-  from public.point_transactions
-  where tenant_id    = _tenant_id
-    and customer_id  = p_customer_id
-    and remaining_points > 0
-    and expires_at   > now()
-  for update nowait;
+  from (
+    select id, remaining_points, expires_at
+    from public.point_transactions
+    where tenant_id    = _tenant_id
+      and customer_id  = p_customer_id
+      and remaining_points > 0
+      and expires_at   > now()
+    for update nowait
+  ) locked_rows;
 
   -- 5. Check sufficient balance
   if _balance < p_points_to_redeem then

@@ -26,10 +26,8 @@ router.get('/', requireAdmin, async (req, res) => {
 
 // POST /redemptions
 // Body: { customer_id: string, points_redeemed: number, reward_type: string }
-// The employee marks that a customer redeemed their points for a reward.
-// This records the event; the actual discount is applied manually (Phase 1: Opción A).
 router.post('/', requireAdmin, async (req, res) => {
-  const { supabase, tenantId } = res.locals.admin
+  const { supabase } = res.locals.admin
   const { customer_id, points_redeemed, reward_type } = req.body as {
     customer_id?: string
     points_redeemed?: unknown
@@ -45,56 +43,25 @@ router.post('/', requireAdmin, async (req, res) => {
     return
   }
 
-  // Verify the customer has enough active (non-expired) points.
-  const { data: txRows, error: txError } = await supabase
-    .from('point_transactions')
-    .select('id, remaining_points, expires_at')
-    .eq('tenant_id', tenantId)
-    .eq('customer_id', customer_id)
-    .gt('remaining_points', 0)
-    .gt('expires_at', new Date().toISOString())
-    .order('expires_at', { ascending: true })
+  const { data, error } = await supabase.rpc('redeem_points', {
+    p_customer_id:      customer_id,
+    p_points_to_redeem: pts,
+    p_reward_type:      reward_type.trim(),
+  })
 
-  if (txError) { res.status(500).json({ error: txError.message }); return }
-
-  const balance = (txRows ?? []).reduce((s, t) => s + t.remaining_points, 0)
-  if (balance < pts) {
-    res.status(409).json({ error: `insufficient points: balance is ${balance}, requested ${pts}` })
+  if (error) {
+    const code = (error as { code?: string }).code
+    if (code === '55P03') {
+      res.status(409).json({ error: 'redemption in progress for this customer, please retry' })
+      return
+    }
+    if (code === 'P0005') { res.status(404).json({ error: 'customer not found' }); return }
+    if (code === 'P0006') { res.status(409).json({ error: error.message }); return }
+    res.status(500).json({ error: error.message })
     return
   }
 
-  // FIFO: deduct from soonest-to-expire transactions first.
-  let remaining = pts
-  const updates: Array<{ id: string; remaining_points: number }> = []
-
-  for (const tx of txRows ?? []) {
-    if (remaining <= 0) break
-    const deduct = Math.min(tx.remaining_points, remaining)
-    updates.push({ id: tx.id, remaining_points: tx.remaining_points - deduct })
-    remaining -= deduct
-  }
-
-  // Apply deductions + insert redemption record in a single RPC call for
-  // atomicity. Since we don't have a dedicated RPC for this yet, we run
-  // the updates sequentially inside a try/catch. A future migration can
-  // wrap this in a SECURITY DEFINER function if needed.
-  for (const u of updates) {
-    const { error: upErr } = await supabase
-      .from('point_transactions')
-      .update({ remaining_points: u.remaining_points })
-      .eq('id', u.id)
-
-    if (upErr) { res.status(500).json({ error: upErr.message }); return }
-  }
-
-  const { data, error } = await supabase
-    .from('redemptions')
-    .insert({ tenant_id: tenantId, customer_id, points_redeemed: pts, reward_type: reward_type.trim() })
-    .select()
-    .single()
-
-  if (error) { res.status(500).json({ error: error.message }); return }
-  res.status(201).json({ ...data, new_balance: balance - pts })
+  res.status(201).json(data)
 })
 
 export default router

@@ -129,7 +129,17 @@ export interface Redemption {
   points_redeemed: number
   reward_type: string
   created_at: string
-  customers: { phone: string; name: string | null } | null
+  customers: { phone: string; name: string | null } | null  // only present on GET list responses
+}
+
+export interface RedemptionCreated {
+  id: string
+  tenant_id: string
+  customer_id: string
+  points_redeemed: number
+  reward_type: string
+  created_at: string
+  new_balance: number
 }
 
 // Settings
@@ -158,5 +168,5 @@ export async function createRedemption(customerId: string, pointsRedeemed: numbe
     method: 'POST',
     body: JSON.stringify({ customer_id: customerId, points_redeemed: pointsRedeemed, reward_type: rewardType }),
   })
-  return res.json() as Promise<Redemption & { new_balance: number }>
+  return res.json() as Promise<RedemptionCreated>
 }
