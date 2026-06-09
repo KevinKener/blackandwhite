@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getOrders, createOrder, completeOrder, type Order, ApiError } from '../lib/api.ts'
+import { supabase } from '../lib/supabase.ts'
 
 const PAGE_SIZE = 20
 
@@ -13,6 +14,10 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  // Auth context
+  const [userRole, setUserRole] = useState<'owner' | 'manager' | null>(null)
+  const [userLocationId, setUserLocationId] = useState<string | null>(null)
+
   // New order modal
   const [showNewOrder, setShowNewOrder] = useState(false)
   const [locationId, setLocationId] = useState('')
@@ -25,6 +30,14 @@ export default function OrdersPage() {
   const [completing, setCompleting] = useState(false)
   const [completeError, setCompleteError] = useState('')
   const [lastResult, setLastResult] = useState<{ points: number; phone: string } | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      const meta = data.session?.user?.app_metadata as Record<string, unknown> | undefined
+      setUserRole((meta?.role as 'owner' | 'manager') ?? null)
+      setUserLocationId(typeof meta?.location_id === 'string' ? meta.location_id : null)
+    })
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -44,11 +57,12 @@ export default function OrdersPage() {
 
   async function handleCreateOrder(e: React.FormEvent) {
     e.preventDefault()
-    if (!locationId.trim()) return
+    const resolvedLocationId = userRole === 'manager' ? userLocationId : locationId.trim()
+    if (!resolvedLocationId) return
     setCreating(true)
     setCreateError('')
     try {
-      await createOrder(locationId.trim())
+      await createOrder(resolvedLocationId)
       setShowNewOrder(false)
       setLocationId('')
       load()
@@ -200,17 +214,21 @@ export default function OrdersPage() {
       {showNewOrder && (
         <Modal title="Nuevo pedido" onClose={() => setShowNewOrder(false)}>
           <form onSubmit={handleCreateOrder} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">ID del local</label>
-              <input
-                type="text"
-                required
-                value={locationId}
-                onChange={(e) => setLocationId(e.target.value)}
-                placeholder="uuid del local"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
+            {userRole === 'manager' ? (
+              <p className="text-sm text-gray-500">Se creará un pedido para tu local.</p>
+            ) : (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ID del local</label>
+                <input
+                  type="text"
+                  required
+                  value={locationId}
+                  onChange={(e) => setLocationId(e.target.value)}
+                  placeholder="uuid del local"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+            )}
             {createError && <p className="text-sm text-red-600">{createError}</p>}
             <button
               type="submit"

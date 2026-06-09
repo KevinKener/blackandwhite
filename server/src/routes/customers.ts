@@ -107,9 +107,16 @@ router.get('/by-token/:token', async (req, res) => {
 
   const balance = (txRows ?? []).reduce((sum, tx) => sum + tx.remaining_points, 0)
 
+  const { data: settings } = await supabaseAdmin
+    .from('tenant_settings')
+    .select('points_for_reward')
+    .eq('tenant_id', customer.tenant_id)
+    .single()
+
   res.json({
     customer: { name: customer.name, phone: customer.phone },
     balance,
+    points_for_reward: settings?.points_for_reward ?? null,
     transactions: txRows ?? [],
   })
 })
