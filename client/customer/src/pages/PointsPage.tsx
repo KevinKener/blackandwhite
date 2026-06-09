@@ -15,6 +15,7 @@ interface Transaction {
 interface CustomerData {
   customer: { name: string | null; phone: string }
   balance: number
+  points_for_reward: number | null
   transactions: Transaction[]
 }
 
@@ -72,7 +73,7 @@ export default function PointsPage() {
   }
 
   const { data } = state
-  const { customer, balance, transactions } = data
+  const { customer, balance, points_for_reward, transactions } = data
   const greeting = customer.name ? `Hola, ${customer.name.split(' ')[0]}` : 'Hola'
 
   // Soonest-to-expire transaction with remaining points — warn if ≤ 30 days left
@@ -100,6 +101,34 @@ export default function PointsPage() {
           </p>
         )}
       </div>
+
+      {/* Reward goal */}
+      {points_for_reward !== null && (
+        <div className="mx-4 mb-6">
+          {balance >= points_for_reward ? (
+            <div className="bg-white/10 rounded-2xl px-5 py-4 text-center">
+              <p className="text-white font-semibold text-base">¡Ya podés canjear una recompensa!</p>
+              <p className="text-white/50 text-sm mt-1">Mostrá esta pantalla en el local.</p>
+            </div>
+          ) : (
+            <div className="bg-white/10 rounded-2xl px-5 py-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-white/70 text-sm">Próxima recompensa</p>
+                <p className="text-white text-sm font-semibold">{balance} / {points_for_reward}</p>
+              </div>
+              <div className="w-full bg-white/20 rounded-full h-2">
+                <div
+                  className="bg-white rounded-full h-2 transition-all"
+                  style={{ width: `${Math.min(100, Math.round((balance / points_for_reward) * 100))}%` }}
+                />
+              </div>
+              <p className="text-white/50 text-xs mt-2">
+                Te {points_for_reward - balance === 1 ? 'falta 1 punto' : `faltan ${points_for_reward - balance} puntos`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Transactions */}
       <div className="px-4 pb-12">
