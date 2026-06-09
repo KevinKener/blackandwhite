@@ -114,3 +114,49 @@ export interface AnalyticsSummary {
   customers: { total: number }
   points: { total_issued: number; active_balance: number }
 }
+
+export interface TenantSettings {
+  points_per_order: number
+  points_for_reward: number
+  expiry_days: number
+  updated_at: string
+}
+
+export interface Redemption {
+  id: string
+  tenant_id: string
+  customer_id: string
+  points_redeemed: number
+  reward_type: string
+  created_at: string
+  customers: { phone: string; name: string | null } | null
+}
+
+// Settings
+export async function getSettings() {
+  const res = await authFetch('/settings')
+  return res.json() as Promise<TenantSettings>
+}
+
+export async function updateSettings(patch: Partial<Pick<TenantSettings, 'points_per_order' | 'points_for_reward' | 'expiry_days'>>) {
+  const res = await authFetch('/settings', { method: 'PATCH', body: JSON.stringify(patch) })
+  return res.json() as Promise<TenantSettings>
+}
+
+// Redemptions
+export async function getRedemptions(params: { customer_id?: string; page?: number; limit?: number } = {}) {
+  const qs = new URLSearchParams()
+  if (params.customer_id) qs.set('customer_id', params.customer_id)
+  if (params.page) qs.set('page', String(params.page))
+  if (params.limit) qs.set('limit', String(params.limit))
+  const res = await authFetch(`/redemptions?${qs}`)
+  return res.json() as Promise<{ data: Redemption[]; total: number; page: number; limit: number }>
+}
+
+export async function createRedemption(customerId: string, pointsRedeemed: number, rewardType: string) {
+  const res = await authFetch('/redemptions', {
+    method: 'POST',
+    body: JSON.stringify({ customer_id: customerId, points_redeemed: pointsRedeemed, reward_type: rewardType }),
+  })
+  return res.json() as Promise<Redemption & { new_balance: number }>
+}

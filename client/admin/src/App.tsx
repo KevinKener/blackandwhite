@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage.tsx'
 import OrdersPage from './pages/OrdersPage.tsx'
 import CustomersPage from './pages/CustomersPage.tsx'
 import AnalyticsPage from './pages/AnalyticsPage.tsx'
+import SettingsPage from './pages/SettingsPage.tsx'
+import RedemptionsPage from './pages/RedemptionsPage.tsx'
 
 export default function App() {
   return (
@@ -20,7 +22,9 @@ export default function App() {
                   <Route path="/" element={<Navigate to="/orders" replace />} />
                   <Route path="/orders" element={<OrdersPage />} />
                   <Route path="/customers" element={<CustomersPage />} />
+                  <Route path="/redemptions" element={<RedemptionsPage />} />
                   <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/settings" element={<SettingsPage />} />
                 </Routes>
               </Layout>
             </ProtectedRoute>
