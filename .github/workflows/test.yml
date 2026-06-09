@@ -103,3 +103,45 @@ jobs:
           name: playwright-report
           path: tests/playwright-report/
           retention-days: 7
+
+  deploy:
+    name: Deploy to Vercel (production)
+    runs-on: ubuntu-latest
+    # Only deploy on push to main, and only after integration tests pass.
+    # E2E is not a blocker for deploy — it requires secrets that forks won't have.
+    needs: [integration]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install Vercel CLI
+        run: bun add -g vercel
+
+      # Deploy the three projects in parallel using Vercel CLI.
+      # Each project needs its own VERCEL_PROJECT_ID stored as a secret.
+      # Get the IDs from: vercel project ls  (after linking each project once with `vercel link`)
+      - name: Deploy API
+        run: vercel deploy --prod --yes --cwd server
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_API }}
+
+      - name: Deploy admin panel
+        run: vercel deploy --prod --yes --cwd client/admin
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_ADMIN }}
+
+      - name: Deploy customer PWA
+        run: vercel deploy --prod --yes --cwd client/customer
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_CUSTOMER }}
