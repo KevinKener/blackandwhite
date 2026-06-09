@@ -3,3 +3,14 @@
 
 # Session summaries
 resumen-sesion-*.html
+
+# Environment variables
+.env
+.env.local
+
+# Build output
+server/dist/
+node_modules/
+server/node_modules/
+client/admin/node_modules/
+client/customer/node_modules/
