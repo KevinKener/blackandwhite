@@ -4,7 +4,9 @@ import { supabase } from '../lib/supabase.ts'
 const navItems = [
   { to: '/orders', label: 'Pedidos' },
   { to: '/customers', label: 'Clientes' },
+  { to: '/redemptions', label: 'Canjes' },
   { to: '/analytics', label: 'Métricas' },
+  { to: '/settings', label: 'Configuración' },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
