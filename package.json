@@ -1,0 +1,14 @@
+{
+  "name": "blackandwhite",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": ["server", "client/admin", "client/customer", "tests"],
+  "scripts": {
+    "dev:server": "bun run --cwd server dev",
+    "dev:admin": "bun run --cwd client/admin dev",
+    "dev:customer": "bun run --cwd client/customer dev",
+    "test": "bun run --cwd tests test",
+    "test:e2e": "bun run --cwd tests test:e2e",
+    "build": "bun run --cwd server build && bun run --cwd client/admin build && bun run --cwd client/customer build"
+  }
+}
