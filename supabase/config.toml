@@ -3,9 +3,7 @@
 # Run `supabase start` to spin up a local Supabase stack.
 # Docs: https://supabase.com/docs/guides/cli/config
 
-[project]
-# Replace with your Supabase project ref (found in Dashboard → Settings → General)
-project_id = "your-project-ref"
+project_id = "blackandwhite"
 
 [api]
 enabled = true
